@@ -28,7 +28,7 @@
 cellUI <- function(id){
   ns <- NS(id)
 
-  fluidRow(
+  fluidRow(id=ns("cell"),
     shinydashboard::box(width = 12, solidHeader = TRUE, status = "primary", collapsible = TRUE,
                         title=paste("Cell", id))
   )
@@ -93,3 +93,26 @@ cell <- function(input, output, session){
   #   })
   # })
 }
+
+
+#' Cell object
+#'
+#' If \code{id=NULL} the function runs an new empty notebook, else the notebook given as argument is run.
+#'
+#' @param id id of the notebook
+#'
+#' @return A shinyApp object which run in browser (see https://shiny.rstudio.com/reference/shiny/latest/shinyApp.html for more information).
+#'
+#' @examples
+#' cellUI(id = 3)
+#'
+#' @import shiny
+#' @import shinydashboard
+#' @export
+SessionCells <- setRefClass("SessionCells", fields = c("id", "name"))
+SessionCells$methods(
+  addCell = function(id, name){
+    .self$name = c(.self$name, name)
+    .self$id = c(.self$id, id)
+  }
+)

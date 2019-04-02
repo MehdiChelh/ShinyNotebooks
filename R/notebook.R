@@ -53,7 +53,11 @@ notebookUI <- function(){
                             tags$li(tags$a(tags$span(icon("plus"), style="margin-right:10px")," Cell",
                                            `class`="dropdown-toggle action-button shiny-bound-input",
                                            `id`="addCellBtn"), `class`="dropdown"))
-  sidebar <- dashboardSidebar()
+  sidebar <- dashboardSidebar(
+    sidebarMenu(style="position:fixed; width:230px; height:calc(100vh - 50px); overflow-y:scroll",
+                div(id='end_menu_out_treat')
+    )
+  )
   body <- dashboardBody()
 
   return(dashboardPage(header, sidebar, body))
@@ -84,16 +88,30 @@ notebookServer <- function(input, output){
                                              private.static=list())
 
   session.variables$private.reactive[["cellCount"]] <- 0
+  session.variables$private.reactive[["SessionCells"]] <- SessionCells$new(id=NULL, name=NULL)
 
   observeEvent(input[['addCellBtn']], {
+    # Compute cell id
+    new_cell_id <- session.variables$private.reactive[["cellCount"]] + 1
+    session.variables$private.reactive[["cellCount"]] <- new_cell_id
+    session.variables$private.reactive[["SessionCells"]]$addCell(id = new_cell_id, name = paste("Cell", new_cell_id))
+
+    # Insert cell UI in content
     insertUI(
       selector = ".content",
       where = "beforeEnd",
       ui = cellUI(session.variables$private.reactive[["cellCount"]]) #otcBoxUI(l, "output_box")
     )
-    session.variables$private.reactive[["cellCount"]] <- session.variables$private.reactive[["cellCount"]] + 1
     callModule(cell, session.variables$private.reactive[["cellCount"]])
+
+    # Insert cell link in sidebar
+    insertUI(
+      selector = "#end_menu_out_treat",
+      where = "beforeBegin",
+      ui = tags$li(
+        tags$a(renderText({ session.variables$private.reactive[["SessionCells"]]$name[new_cell_id] }),
+               href=paste0("#", new_cell_id, "-cell")))
+    )
   })
 }
 
-runNotebook()
