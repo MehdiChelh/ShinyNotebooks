@@ -30,33 +30,26 @@ cellUI <- function(id){
 
   fluidRow(id=ns("cell"),
     shinydashboard::box(width = 12, solidHeader = TRUE, status = "primary", collapsible = TRUE,
-                        title=paste("Cell", id))
+                        title=tags$span(tags$span(actionLink(
+                          inputId = ns("title-btn"),
+                          label = icon("pencil"))),
+                          tags$span(textOutput(ns("title-text"), inline = TRUE))),
+                        selectizeInput(
+                          ns('cellContentChoice'), 'Cell content', choices = c("Data import",
+                                                                               "Data export",
+                                                                               "Plot > Histogram",
+                                                                               "Plot > Scatter",
+                                                                               "Plot > Bar",
+                                                                               "Plot > Pie",
+                                                                               "Plot > Contour",
+                                                                               "Plot > Surface"),
+                          options = list(
+                            placeholder = 'Please select an option below',
+                            onInitialize = I('function() { this.setValue(""); }')
+                          )
+                        ),
+                        uiOutput(ns("cellContent")))
   )
-
-  # fluidRow(id = ns(id),
-  #          column(12,
-  #                 shinydashboard::box(
-  #                   width = 16,
-  #                   title = tags$span(
-  #                     tags$span(actionLink(
-  #                       inputId = ns("title-btn"),
-  #                       label = icon("pencil"))),
-  #                     tags$span(
-  #                       textOutput(ns("title-text"), inline = TRUE))),
-  #                   solidHeader = TRUE,
-  #                   status = "primary",
-  #                   collapsible = TRUE#,
-  #
-  #                   #if(content == "output_box")
-  #                   #{
-  #                     #outputBoxUI(id, ns(""))
-  #                   #}
-  #
-  #                   #here comes the content
-  #
-  #                 )
-  #          )
-  # )
 }
 
 #' Cell server logic
@@ -73,25 +66,41 @@ cellUI <- function(id){
 #' @import shiny
 #' @import shinydashboard
 #' @export
-cell <- function(input, output, session){
-  # observeEvent(input[["title-btn"]], {
-  #   print("ok")
-  #   showModal(modalDialog(
-  #     textInput(session$ns("modalTxtInput"), "Modify Box Name",
-  #               value = "", #boxNames[[as.character(id)]],
-  #               placeholder = ''
-  #     ),
-  #     footer = tagList(
-  #       modalButton("Cancel"),
-  #       actionButton(session$ns("okModal"), "OK")
-  #     )
-  #   ))
-  #   observeEvent(input$okModal,{
-  #     #boxNames[[as.character(id)]] <<- input$modalTxtInput
-  #     output[["title-text"]] <- renderText({input[["modalTxtInput"]]})
-  #     removeModal()
-  #   })
-  # })
+cell <- function(input, output, session, cell_id, session.variables){
+
+  # Cell title/name
+  output[["title-text"]] <- renderText({session.variables$private.reactive[["cellNames"]][cell_id]})
+
+  # Button for modifying cell title/name
+  #   This button allow you to open a modal to change cell name
+  observeEvent(input[["title-btn"]], {
+    showModal(modalDialog(
+      textInput(session$ns("modalTxtInput"), "Modify Box Name",
+                value = session.variables$private.reactive[["cellNames"]][cell_id],
+                placeholder = ''
+      ),
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton(session$ns("okModal"), "OK")
+      )
+    ))
+    observeEvent(input$okModal,{
+      session.variables$private.reactive[["cellNames"]][cell_id] <- input$modalTxtInput
+      removeModal()
+    })
+
+  })
+
+  # Cell content
+  # Input parameters : cell, session.variables,
+  observeEvent(input[["cellContentChoice"]], {
+    if (input[["cellContentChoice"]] != "") {
+      renderUI({
+        moduleUI[[input[["cellContentChoice"]]]](session.variables)
+      })
+      callModule()
+    }
+  })
 }
 
 
