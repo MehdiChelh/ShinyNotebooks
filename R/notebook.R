@@ -84,6 +84,8 @@ notebookUI <- function(){
 #' @export
 notebookServer <- function(input, output){
 
+  enableBookmarking(store = "server")
+
   # > Define session variable
   session.variables  <- SessionVariables$new(reactive=reactiveValues(),
                                              static=list(),
@@ -117,6 +119,39 @@ notebookServer <- function(input, output){
         tags$a(renderText({ session.variables$private.reactive[["cellNames"]][new_cell_id] }),
                href=paste0("#", new_cell_id, "-cell")))
     )
+  })
+
+  # S'exécute lors de la sauvegarde
+  onBookmark(function(state){
+    state$values$session.variables <- SessionVariables$new(reactive=list(),
+                                                           static=list(),
+                                                           private.reactive=list(),
+                                                           private.static=list())
+    state$values$session.variables$static <- session.variables$static
+    state$values$session.variables$private.static <- session.variables$private.static
+    state$values$session.variables$reactive <- reactiveValuesToList(session.variables$reactive)
+    state$values$session.variables$private.reactive <- reactiveValuesToList(session.variables$private.reactive)
+
+  })
+
+  onRestore(function(state){
+    # Restore la session.variable
+    session.variables <<- SessionVariables$new(reactive=list(),
+                                               static=list(),
+                                               private.reactive=list(),
+                                               private.static=list())
+    session.variables$static <<- state$values$session.variables$static
+    session.variables$private.static <<- state$values$session.variables$private.static
+    session.variables$reactive <<- reactiveValues()
+    for (key in names(state$values$session.variables$reactive)){
+      session.variables$reactive[[key]] <<- state$values$session.variables$reactive[[key]]
+    }
+    session.variables$private.reactive <<- reactiveValues()
+    for (key in names(state$values$session.variables$private.reactive)){
+      session.variables$private.reactive[[key]] <<- state$values$session.variables$private.reactive[[key]]
+    }
+
+    # Restore les cellules
   })
 }
 
