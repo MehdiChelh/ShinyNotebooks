@@ -107,9 +107,9 @@ notebookServer <- function(input, output){
     insertUI(
       selector = ".content",
       where = "beforeEnd",
-      ui = cellUI(session.variables$private.reactive[["cellCount"]])
+      ui = cellUI(new_cell_id)
     )
-    callModule(cell, session.variables$private.reactive[["cellCount"]], new_cell_id, session.variables)
+    callModule(cell, new_cell_id, new_cell_id, session.variables)
 
     # Insert cell link in sidebar
     insertUI(
@@ -152,6 +152,25 @@ notebookServer <- function(input, output){
     }
 
     # Restore les cellules
+    # Insert cell UI in content
+    lapply(1:session.variables$private.reactive[["cellCount"]], function(cell_id){
+      insertUI(
+        selector = ".content",
+        where = "beforeEnd",
+        ui = cellUI(cell_id)
+      )
+      callModule(cell, cell_id, cell_id, session.variables)
+
+      # Insert cell link in sidebar
+      insertUI(
+        selector = "#end_menu_out_treat",
+        where = "beforeBegin",
+        ui = tags$li(
+          tags$a(renderText({ session.variables$private.reactive[["cellNames"]][cell_id] }),
+                 href=paste0("#", cell_id, "-cell")))
+      )
+    })
+
   })
 }
 

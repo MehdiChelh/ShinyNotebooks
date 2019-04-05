@@ -67,7 +67,6 @@ cellUI <- function(id){
 #' @import shinydashboard
 #' @export
 cell <- function(input, output, session, cell_id, session.variables){
-
   # Cell title/name
   output[["title-text"]] <- renderText({session.variables$private.reactive[["cellNames"]][cell_id]})
 
