@@ -68,14 +68,14 @@ cellUI <- function(id){
 #' @export
 cell <- function(input, output, session, cell_id, session.variables){
   # Cell title/name
-  output[["title-text"]] <- renderText({session.variables$private.reactive[["cellNames"]][cell_id]})
+  output[["title-text"]] <- renderText({session$userData$NS$private.reactive[["cellNames"]][cell_id]})
 
   # Button for modifying cell title/name
   #   This button allow you to open a modal to change cell name
   observeEvent(input[["title-btn"]], {
     showModal(modalDialog(
       textInput(session$ns("modalTxtInput"), "Modify Box Name",
-                value = session.variables$private.reactive[["cellNames"]][cell_id],
+                value = session$userData$NS$private.reactive[["cellNames"]][cell_id],
                 placeholder = ''
       ),
       footer = tagList(
@@ -84,7 +84,7 @@ cell <- function(input, output, session, cell_id, session.variables){
       )
     ))
     observeEvent(input$okModal,{
-      session.variables$private.reactive[["cellNames"]][cell_id] <- input$modalTxtInput
+      session$userData$NS$private.reactive[["cellNames"]][cell_id] <- input$modalTxtInput
       removeModal()
     })
 

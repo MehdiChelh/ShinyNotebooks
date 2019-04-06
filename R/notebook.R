@@ -28,9 +28,7 @@
 runNotebook <- function(id=NULL, port=1994) {
   message("Start notebook...") # add notebook name/id in the future
 
-  ui <- notebookUI()
-
-  shinyApp(ui=ui, server=notebookServer, options = list(port=port))
+  shinyApp(ui=notebookUI, server=notebookServer, options = list(port=port))
 }
 
 
@@ -48,7 +46,7 @@ runNotebook <- function(id=NULL, port=1994) {
 #' @import shiny
 #' @import shinydashboard
 #' @export
-notebookUI <- function(){
+notebookUI <- function(request){
   header <- dashboardHeader(title = "{ ShinyNotebook }",
                             tags$li(tags$a(tags$span(icon("plus"), style="margin-right:10px")," Cell",
                                            `class`="dropdown-toggle action-button shiny-bound-input",
@@ -82,95 +80,69 @@ notebookUI <- function(){
 #' @import shiny
 #' @import shinydashboard
 #' @export
-notebookServer <- function(input, output){
-
+notebookServer <- function(input, output, session){
+  # get_page <- function(session = shiny::getDefaultReactiveDomain()) {
+  #   session$userData$shiny.router.page()$path
+  # }
   enableBookmarking(store = "server")
 
-  # > Define session variable
-  session.variables  <- SessionVariables$new(reactive=reactiveValues(),
+  # NotebookSession
+  #   NotebookSession is an Reference Class (see Reference Class documentation)
+  #   which is pass through all the modules of the session through the session$userData$NS variable
+  #
+  #   This object can be seen as a slight wrapper to shiny library.
+  #   It allows to easily share variable between notebook cells and bookmark/restore notebooks.
+  session$userData$NS <- NotebookSession$new(reactive=reactiveValues(),
                                              static=list(),
                                              private.reactive=reactiveValues(),
                                              private.static=list())
 
-  session.variables$private.reactive[["cellCount"]] <- 0
-  session.variables$private.reactive[["cellNames"]] <- c()
-  session.variables$private.reactive[["SessionCells"]] <- SessionCells$new(id=NULL, name=NULL)
+  session$userData$NS$private.reactive[["cellCount"]] <- 0
+  session$userData$NS$private.reactive[["cellNames"]] <- c()
+  session$userData$NS$private.reactive[["SessionCells"]] <- SessionCells$new(id=NULL, name=NULL)
 
+  # UI button
+  #   The notebook UI is quite minimalist, thus there arren't a lot of observeEvent()
+  #   The few ones are defined bellow.
+  #   They concern the following buttons : addCellBtn, ...
   observeEvent(input[['addCellBtn']], {
     # Compute cell id
-    new_cell_id <- session.variables$private.reactive[["cellCount"]] + 1
-    session.variables$private.reactive[["cellCount"]] <- new_cell_id
-    session.variables$private.reactive[["cellNames"]] <- c(session.variables$private.reactive[["cellNames"]], paste("Cell", new_cell_id))
-    session.variables$private.reactive[["SessionCells"]]$addCell(id = new_cell_id, name = paste("Cell", new_cell_id))
+    new_cell_id <- session$userData$NS$private.reactive[["cellCount"]] + 1
+    session$userData$NS$private.reactive[["cellCount"]] <- new_cell_id
+    session$userData$NS$private.reactive[["cellNames"]] <- c(session$userData$NS$private.reactive[["cellNames"]], paste("Cell", new_cell_id))
+    # session$userData$NS$private.reactive[["SessionCells"]]$addCell(id = new_cell_id, name = paste("Cell", new_cell_id))
 
-    # Insert cell UI in content
-    insertUI(
-      selector = ".content",
-      where = "beforeEnd",
-      ui = cellUI(new_cell_id)
-    )
-    callModule(cell, new_cell_id, new_cell_id, session.variables)
-
-    # Insert cell link in sidebar
-    insertUI(
-      selector = "#end_menu_out_treat",
-      where = "beforeBegin",
-      ui = tags$li(
-        tags$a(renderText({ session.variables$private.reactive[["cellNames"]][new_cell_id] }),
-               href=paste0("#", new_cell_id, "-cell")))
-    )
+    # Insert cell in UI
+    session$userData$NS$insert_cell_UI(new_cell_id)
   })
 
-  # S'exécute lors de la sauvegarde
+
+  # Bookmarking is slightly refined with NotebookSession
+  #
+  #   Bookmarking is very convenient in shiny as it automates bookmark procedure.
+  #   However, bookmarking has some intrinsinc limitations : can't handle UI's inserted through insertUI(), ...
+  #   Thus bookmarking need to be revised in the NotebookSession framework.
+  #
+  #   Currently onBookmark and onRestore call session bookmarking are defined below.
+  #   Future improvements : make onBookmark() and onRestore() wrappers
+  #
+  #   > Bookmark NotebookSession
+  #     called if the session is being bookmarked (bookmark button)
   onBookmark(function(state){
-    state$values$session.variables <- SessionVariables$new(reactive=list(),
-                                                           static=list(),
-                                                           private.reactive=list(),
-                                                           private.static=list())
-    state$values$session.variables$static <- session.variables$static
-    state$values$session.variables$private.static <- session.variables$private.static
-    state$values$session.variables$reactive <- reactiveValuesToList(session.variables$reactive)
-    state$values$session.variables$private.reactive <- reactiveValuesToList(session.variables$private.reactive)
-
+  #     1. Bookmark NotebookSession
+    state$values$NS <- session$userData$NS$bookmark_state()
+  #     2. Bookmark cells
   })
-
+  #
+  #   > Restore NotebookSession
+  #     called if the session is being restored from a bookmark
   onRestore(function(state){
-    # Restore la session.variable
-    session.variables <<- SessionVariables$new(reactive=list(),
-                                               static=list(),
-                                               private.reactive=list(),
-                                               private.static=list())
-    session.variables$static <<- state$values$session.variables$static
-    session.variables$private.static <<- state$values$session.variables$private.static
-    session.variables$reactive <<- reactiveValues()
-    for (key in names(state$values$session.variables$reactive)){
-      session.variables$reactive[[key]] <<- state$values$session.variables$reactive[[key]]
-    }
-    session.variables$private.reactive <<- reactiveValues()
-    for (key in names(state$values$session.variables$private.reactive)){
-      session.variables$private.reactive[[key]] <<- state$values$session.variables$private.reactive[[key]]
-    }
-
-    # Restore les cellules
-    # Insert cell UI in content
-    lapply(1:session.variables$private.reactive[["cellCount"]], function(cell_id){
-      insertUI(
-        selector = ".content",
-        where = "beforeEnd",
-        ui = cellUI(cell_id)
-      )
-      callModule(cell, cell_id, cell_id, session.variables)
-
-      # Insert cell link in sidebar
-      insertUI(
-        selector = "#end_menu_out_treat",
-        where = "beforeBegin",
-        ui = tags$li(
-          tags$a(renderText({ session.variables$private.reactive[["cellNames"]][cell_id] }),
-                 href=paste0("#", cell_id, "-cell")))
-      )
+  #     1. Restore NotebookSession
+    session$userData$NS$restore_from_bookmarked_state(state)
+  #     2. Restore cells
+    lapply(1:session$userData$NS$private.reactive[["cellCount"]], function(cell_id){
+      session$userData$NS$insert_cell_UI(cell_id)
     })
-
   })
 }
 
