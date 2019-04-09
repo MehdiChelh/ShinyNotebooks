@@ -99,7 +99,7 @@ notebookServer <- function(input, output, session){
 
   session$userData$NS$private.reactive[["cellCount"]] <- 0
   session$userData$NS$private.reactive[["cellNames"]] <- c()
-  session$userData$NS$private.reactive[["SessionCells"]] <- SessionCells$new(id=NULL, name=NULL)
+  session$userData$NS$private.reactive[["SessionCells"]] <- list() # Liste de Cell SessionCells$new(id=NULL, name=NULL)
 
   # UI button
   #   The notebook UI is quite minimalist, thus there arren't a lot of observeEvent()
@@ -111,9 +111,9 @@ notebookServer <- function(input, output, session){
     session$userData$NS$private.reactive[["cellCount"]] <- new_cell_id
     session$userData$NS$private.reactive[["cellNames"]] <- c(session$userData$NS$private.reactive[["cellNames"]], paste("Cell", new_cell_id))
     # session$userData$NS$private.reactive[["SessionCells"]]$addCell(id = new_cell_id, name = paste("Cell", new_cell_id))
-
+    session$userData$NS$private.reactive[["SessionCells"]][[new_cell_id]] <- session.new_cell <- CellSession$new(id=new_cell_id, userData=list())
     # Insert cell in UI
-    session$userData$NS$insert_cell_UI(new_cell_id)
+    session$userData$NS$insert_cell_UI(new_cell_id, session.new_cell)
   })
 
 

@@ -4,7 +4,7 @@
 \alias{notebookUI}
 \title{Notebook UI}
 \usage{
-notebookUI()
+notebookUI(request)
 }
 \arguments{
 \item{id}{id of the notebook}

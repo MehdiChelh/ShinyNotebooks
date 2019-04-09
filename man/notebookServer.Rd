@@ -4,7 +4,7 @@
 \alias{notebookServer}
 \title{Notebook Server}
 \usage{
-notebookServer(input, output)
+notebookServer(input, output, session)
 }
 \arguments{
 \item{id}{id of the notebook}

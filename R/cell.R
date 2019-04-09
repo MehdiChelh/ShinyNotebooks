@@ -48,7 +48,10 @@ cellUI <- function(id){
                             onInitialize = I('function() { this.setValue(""); }')
                           )
                         ),
-                        uiOutput(ns("cellContent")))
+                        #uiOutput(ns("cellContent")),
+                        plotlyOutput(ns("cellContent")),
+                        textInput(ns("txtIn"), label = "ok"),
+                        textOutput(ns("txtOut")))
   )
 }
 
@@ -65,8 +68,9 @@ cellUI <- function(id){
 #'
 #' @import shiny
 #' @import shinydashboard
+#' @import plotly
 #' @export
-cell <- function(input, output, session, cell_id, session.variables){
+cell <- function(input, output, session, cell_id, cell.session){
   # Cell title/name
   output[["title-text"]] <- renderText({session$userData$NS$private.reactive[["cellNames"]][cell_id]})
 
@@ -85,6 +89,7 @@ cell <- function(input, output, session, cell_id, session.variables){
     ))
     observeEvent(input$okModal,{
       session$userData$NS$private.reactive[["cellNames"]][cell_id] <- input$modalTxtInput
+      cell.session$userData$name <- input$modalTxtInput
       removeModal()
     })
 
@@ -94,12 +99,51 @@ cell <- function(input, output, session, cell_id, session.variables){
   # Input parameters : cell, session.variables,
   observeEvent(input[["cellContentChoice"]], {
     if (input[["cellContentChoice"]] != "") {
-      renderUI({
-        moduleUI[[input[["cellContentChoice"]]]](session.variables)
-      })
-      callModule()
+
+      # renderUI({
+      #   moduleUI[[input[["cellContentChoice"]]]](session.variables)
+      # })
+      # callModule()
+
+      # f <- function(){
+      #   if (input$txtIn == "m"){
+      #     3
+      #   }else{
+      #     4
+      #   }
+      #   cell.session$output_state[[output_name]] <- p
+      # }
+      # output$txtOut <- renderText(f())
+
+      # ModuleServer
+      #   server <- function(){
+      #     cell.session$bookmarked_inputs <- c()
+      #     cell.session$bookmarked_outputs <- c()
+      #
+      #     output[["plot"]] <- renderPlotly({
+      #       p <- plot_ly(x = 1:10, y = 2 * (1:10))
+      #       p
+      #     })
+      #
+      #     onBookmark({
+      #       cell.session$Bookmark()
+      #     })
+      #     onRestore({
+      #       cell.session$Restore()
+      #     })
+      #   }
+
     }
   })
+
+
+  # onBookmark({
+  #
+  # })
+  #
+  # onRestore({
+  #
+  # })
 }
 
 
@@ -117,10 +161,7 @@ cell <- function(input, output, session, cell_id, session.variables){
 #' @import shiny
 #' @import shinydashboard
 #' @export
-SessionCells <- setRefClass("SessionCells", fields = c("id", "name"))
-SessionCells$methods(
-  addCell = function(id, name){
-    .self$name = c(.self$name, name)
-    .self$id = c(.self$id, id)
-  }
+CellSession <- setRefClass("CellSession", fields = c("id", "name", "userData"))
+CellSession$methods(
+
 )

@@ -34,13 +34,13 @@ NotebookSession$methods(
     }
   },
   # > insertCellUI : Insert a Cell with id cell_id
-  insert_cell_UI = function(cell_id){
+  insert_cell_UI = function(cell_id, session.cell){
     insertUI(
       selector = ".content",
       where = "beforeEnd",
       ui = cellUI(cell_id)
     )
-    callModule(cell, cell_id, cell_id, NULL)
+    callModule(cell, cell_id, cell_id, session.cell)
 
     # Insert cell link in sidebar
     insertUI(

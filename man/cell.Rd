@@ -4,7 +4,7 @@
 \alias{cell}
 \title{Cell server logic}
 \usage{
-cell(input, output, session)
+cell(input, output, session, cell_id, cell.session)
 }
 \arguments{
 \item{id}{id of the notebook}
