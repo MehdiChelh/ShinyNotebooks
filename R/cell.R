@@ -114,7 +114,10 @@ cell <- function(input, output, session, cell_id, cell.session){
       #   cell.session$output_state[[output_name]] <- p
       # }
       # output$txtOut <- renderText(f())
-
+      # print(attributes(output))
+      # print(names(output))
+      # print(names(output$ns))
+      # print(names(output$impl))
       # ModuleServer
       #   server <- function(){
       #     cell.session$bookmarked_inputs <- c()
@@ -140,10 +143,12 @@ cell <- function(input, output, session, cell_id, cell.session){
   # onBookmark({
   #
   # })
-  #
-  # onRestore({
-  #
-  # })
+  # le restore n'est pas capté, il faut fabriqué le restore, mais en fait c'est avantageux ici
+  onRestore(function(state){
+    print(session$userData$NS$static$test)
+    print("wesh")
+    output$txtOut <- renderText({ session$userData$NS$static$test })
+  })
 }
 
 

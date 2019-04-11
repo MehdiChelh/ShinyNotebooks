@@ -139,6 +139,7 @@ notebookServer <- function(input, output, session){
   onRestore(function(state){
   #     1. Restore NotebookSession
     session$userData$NS$restore_from_bookmarked_state(state)
+    session$userData$NS$static$test <- "QLF"
   #     2. Restore cells
     lapply(1:session$userData$NS$private.reactive[["cellCount"]], function(cell_id){
       session$userData$NS$insert_cell_UI(cell_id)
