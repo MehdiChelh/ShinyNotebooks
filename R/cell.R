@@ -25,9 +25,19 @@
 #' @import shiny
 #' @import shinydashboard
 #' @export
-cellUI <- function(id){
+cellUI <- function(id, cell.session){
   ns <- NS(id)
 
+  if ( TRUE ){ #("textInput" == "textInput")# & (bk_id %in% names(cell.session$bookmark))
+    # print(cell.session$bookmark[[bk_id]]$value)
+
+    sel <- "Data import"
+
+  }
+  else{
+    sel <- NULL
+  }
+  sel <- "Data import"
   fluidRow(id=ns("cell"),
     shinydashboard::box(width = 12, solidHeader = TRUE, status = "primary", collapsible = TRUE,
                         title=tags$span(tags$span(actionLink(
@@ -35,7 +45,8 @@ cellUI <- function(id){
                           label = icon("pencil"))),
                           tags$span(textOutput(ns("title-text"), inline = TRUE))),
                         selectizeInput(
-                          ns('cellContentChoice'), 'Cell content', choices = c("Data import",
+                          ns('cellContentChoice'), 'Cell content', choices = c("Empty cell",
+                                                                               "Data import",
                                                                                "Data export",
                                                                                "Plot > Histogram",
                                                                                "Plot > Scatter",
@@ -43,15 +54,18 @@ cellUI <- function(id){
                                                                                "Plot > Pie",
                                                                                "Plot > Contour",
                                                                                "Plot > Surface"),
+                          selected = "Data import",
                           options = list(
-                            placeholder = 'Please select an option below',
-                            onInitialize = I('function() { this.setValue(""); }')
+                            placeholder = 'Please select an option below'
+                            # ,
+                            # onInitialize = I('function() { this.setValue(""); }')
                           )
                         ),
                         #uiOutput(ns("cellContent")),
-                        plotlyOutput(ns("cellContent")),
-                        textInput(ns("txtIn"), label = "ok"),
-                        textOutput(ns("txtOut")))
+                        plotlyOutput(ns("cellContent")))
+                        # textInput(ns("txtIn"), label = "ok"),
+                        # textInput(ns("txtIn2"), label = "ok2"),
+                        # textOutput(ns("txtOut")))
   )
 }
 
@@ -71,6 +85,20 @@ cellUI <- function(id){
 #' @import plotly
 #' @export
 cell <- function(input, output, session, cell_id, cell.session){
+  # Need to be at the begining of the server
+  cell.session$bookmarkIds <- list("txtIn"="textInput", "txtOut"="textOutput") # les outputs ne doivent être restoré qu'en cas de force majeure
+  # cell.session$restore()
+  # for (bk_id in names(cell.session$bookmarkIds)){
+  #   if ((cell.session$bookmarkIds[[bk_id]] == "textInput") ){ # & (bk_id %in% names(cell.session$bookmark))
+  #     # print(cell.session$bookmark[[bk_id]]$value)
+  #     print("where is w")
+  #     print(session$ns(bk_id))
+  #     updateTextInput(session = session, inputId = session$ns(bk_id), value = "wooo")
+  #   }
+  # }
+
+  updateTextInput(session = session, inputId = "txtIn2", value = "wooo")
+  updateTextInput(session = session, inputId = "#1-txtIn", value = "wooo")
   # Cell title/name
   output[["title-text"]] <- renderText({session$userData$NS$private.reactive[["cellNames"]][cell_id]})
 
@@ -98,8 +126,11 @@ cell <- function(input, output, session, cell_id, cell.session){
   # Cell content
   # Input parameters : cell, session.variables,
   observeEvent(input[["cellContentChoice"]], {
-    if (input[["cellContentChoice"]] != "") {
+    if (input[["cellContentChoice"]] != "Empty cell") {
 
+      output[["cellContent"]] <- renderPlotly({
+        plot_ly(mtcars, x=~mpg, y=~disp, type='scatter', mode='markers')
+      })
       # renderUI({
       #   moduleUI[[input[["cellContentChoice"]]]](session.variables)
       # })
@@ -139,16 +170,15 @@ cell <- function(input, output, session, cell_id, cell.session){
     }
   })
 
-
   # onBookmark({
   #
   # })
   # le restore n'est pas capté, il faut fabriqué le restore, mais en fait c'est avantageux ici
-  onRestore(function(state){
-    print(session$userData$NS$static$test)
-    print("wesh")
-    output$txtOut <- renderText({ session$userData$NS$static$test })
-  })
+  # onRestore(function(state){
+  #   print(session$userData$NS$static$test)
+  #   print("wesh")
+  #   output$txtOut <- renderText({ session$userData$NS$static$test })
+  # })
 }
 
 
@@ -166,7 +196,7 @@ cell <- function(input, output, session, cell_id, cell.session){
 #' @import shiny
 #' @import shinydashboard
 #' @export
-CellSession <- setRefClass("CellSession", fields = c("id", "name", "userData"))
+CellSession <- setRefClass("CellSession", fields = c("id", "name", "userData", "bookmark", "bookmarkIds", "ns"))
 CellSession$methods(
 
 )

@@ -111,7 +111,8 @@ notebookServer <- function(input, output, session){
     session$userData$NS$private.reactive[["cellCount"]] <- new_cell_id
     session$userData$NS$private.reactive[["cellNames"]] <- c(session$userData$NS$private.reactive[["cellNames"]], paste("Cell", new_cell_id))
     # session$userData$NS$private.reactive[["SessionCells"]]$addCell(id = new_cell_id, name = paste("Cell", new_cell_id))
-    session$userData$NS$private.reactive[["SessionCells"]][[new_cell_id]] <- session.new_cell <- CellSession$new(id=new_cell_id, userData=list())
+    print(NS(session$ns(new_cell_id))("ok"))
+    session$userData$NS$private.reactive[["SessionCells"]][[new_cell_id]] <- session.new_cell <- CellSession$new(id=new_cell_id, userData=list(), bookmark = list(), ns = NS(session$ns(new_cell_id)))
     # Insert cell in UI
     session$userData$NS$insert_cell_UI(new_cell_id, session.new_cell)
   })
@@ -132,6 +133,13 @@ notebookServer <- function(input, output, session){
   #     1. Bookmark NotebookSession
     state$values$NS <- session$userData$NS$bookmark_state()
   #     2. Bookmark cells
+    for (bk_id in names(cell.session$bookmarkIds)){
+      if (cell.session$bookmarkIds[[bk_id]] == "textInput"){
+        print("wesh")
+        print(input[[cell.session(bk_id)]])
+        cell.session$bookmark[[bk_id]] <- input[[cell.session(bk_id)]]
+      }
+    }
   })
   #
   #   > Restore NotebookSession

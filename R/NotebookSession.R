@@ -38,7 +38,7 @@ NotebookSession$methods(
     insertUI(
       selector = ".content",
       where = "beforeEnd",
-      ui = cellUI(cell_id)
+      ui = cellUI(cell_id, session.cell)
     )
     callModule(cell, cell_id, cell_id, session.cell)
 
